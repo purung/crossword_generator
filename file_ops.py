@@ -3,17 +3,18 @@ import pprint
 import shutil
 import subprocess
 import tempfile
+from rich import console
 
 
 def read_word_list(filename, min_length=2, min_different_letters=2):
-    """ This function reads the file and returns the words read. It expects a
+    """This function reads the file and returns the words read. It expects a
     file where each word is in a line.
     """
     # Initialize words list
     words = []
 
     # Get all the words
-    with open(filename, encoding='latin1') as words_file:
+    with open(filename, encoding="utf-8") as words_file:
         for line in words_file:
             word = line.strip()
             if len(word) > min_length and len(set(word)) > min_different_letters:
@@ -23,8 +24,10 @@ def read_word_list(filename, min_length=2, min_different_letters=2):
     return words
 
 
-def write_grid_to_file(grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=False, words=[]):
-    """ This function receives the generated grid and writes it to the file (or
+def write_grid_to_file(
+    grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=False, words=[]
+):
+    """This function receives the generated grid and writes it to the file (or
     to the screen, if that's what we want). The grid is expected to be a list
     of lists, as used by the remaining functions.
 
@@ -60,7 +63,7 @@ def write_grid_to_file(grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=F
                     texfile.write(r"\cellcolor{black}0")
 
                 # This feels a bit hacky, suggestions appreciated
-                if index != len(line)-1:
+                if index != len(line) - 1:
                     texfile.write(" & ")
 
             texfile.write(r"\\ \hline" + "\n")
@@ -105,7 +108,7 @@ def write_grid_to_file(grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=F
                 else:
                     texfile.write(str(element))
                 # This feels a bit hacky, suggestions appreciated
-                if index != len(line)-1:
+                if index != len(line) - 1:
                     texfile.write(" & ")
 
             texfile.write(r"\\ \hline" + "\n")
@@ -134,10 +137,10 @@ def write_grid_to_file(grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=F
         os.rename(out_file, "out.tex")
 
         # Compile
-        proc = subprocess.call(['pdflatex', "out.tex"])
+        proc = subprocess.call(["pdflatex", "out.tex"])
 
         # Copy PDF back to the original directory
-        shutil.copy("out.pdf", original_dir+"/"+out_pdf)
+        shutil.copy("out.pdf", original_dir + "/" + out_pdf)
 
         # Move back to the original directory
         os.chdir(original_dir)
@@ -150,11 +153,17 @@ def write_grid_to_file(grid, out_file="table.tex", out_pdf="out.pdf", keep_tex=F
 
 def write_grid_to_screen(grid, words_in_grid):
     # Print grid to the screen
-    print("Final grid:")
-    for line in grid:
-        for element in line:
-            print(" {}".format(element), end="")
-        print()
+    c = console.Console()
 
     print("Words:")
     pprint.pprint(words_in_grid)
+
+    c.print("Final grid:", style="bold red")
+    for line in grid:
+        for element in line:
+            c.print(
+                f" {element if element else ' '}",
+                end="",
+                style="yellow bold" if element != "■" else "rgb(30,30,30)",
+            )
+        print()
