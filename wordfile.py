@@ -26,6 +26,7 @@ def write_words(ord: list[str], mode="a"):
             ordfil.write(o + "\n")
     return True
 
+
 def mixtra(ord):
     redan = load_words()
     korta = {s.text for o in ord for s in o if len(s) < 5 and s not in redan}
@@ -49,6 +50,7 @@ def out(ord: set[str]):
     c = console.Console()
     for rd in ord:
         c.print(rd, style="blue bold", justify="center")
+
 
 def unika():
     return list({s.strip("\n") for s in load_words()})

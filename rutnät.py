@@ -12,10 +12,11 @@ from itertools import takewhile, cycle
 from operator import attrgetter, itemgetter
 from statistics import mean
 import datetime
-from functools import lru_cache 
-import re 
+from functools import lru_cache
+import re
 
 install(show_locals=True)
+
 
 class Ruta(str, Enum):
     TOM = "□"
@@ -169,7 +170,9 @@ class Ordlista:
         return choice(list(self.lediga))
 
     def ordnade(self):
-        yield from sorted((o for o in self.lediga), key=attrgetter("poäng"), reverse=True)
+        yield from sorted(
+            (o for o in self.lediga), key=attrgetter("poäng"), reverse=True
+        )
 
     @lru_cache(maxsize=20000)
     def kompatibla(self, sub: str) -> list[Ord]:
@@ -253,7 +256,6 @@ class Korshår:
         yield from lägen
 
 
-
 @dataclass
 class Korsord:
     höjd: int
@@ -264,7 +266,6 @@ class Korsord:
     cache: list[Ord] = field(default_factory=list, repr=False)
     släng: list[Ord] = field(default_factory=list, repr=False)
     kors: dict[Läge, Kors] = field(default_factory=dict, repr=False)
-
 
     def __post_init__(self):
         lägen = [
@@ -312,7 +313,9 @@ class Korsord:
         png = f"\nPoäng: {self.poängräkning()}\n"
         senast = f"Senaste tillagda ordet: {self.ord[-1]!r}\n"
         senaste = f"Senaste omöjliga orden: {', '.join(str(o) for o in self.släng[:-10:-1])}\n"
-        chanser = f"Senast prövade ord: {', '.join(str(o) for o in self.cache[:-10:-1])}\n"
+        chanser = (
+            f"Senast prövade ord: {', '.join(str(o) for o in self.cache[:-10:-1])}\n"
+        )
         yield str(self) + png + senast + senaste + chanser
 
     @property
@@ -399,9 +402,7 @@ class Korsord:
         friade = [o for o in self.aparta if o not in ord_just_nu]
         for o in friade:
             self.aparta.remove(o)
-        fällda = [
-            o for o in ord_just_nu if o not in self.ord and o not in self.aparta
-        ]
+        fällda = [o for o in ord_just_nu if o not in self.ord and o not in self.aparta]
         self.aparta += fällda
 
         return self
@@ -415,15 +416,24 @@ class Korsord:
 
     def möjligheter_för_ord(self):
         lista = self.ordlista.ordnade()
-        
+
         for bästa in lista:
             try:
                 bkvs = list(bästa)
                 bkvs = sample(bkvs, len(bkvs))
-                for bks in bkvs: 
-                    lägen = (kors for kors in self.kors.values() if not kors.tom and not kors.låst and kors.origo == bks)
+                for bks in bkvs:
+                    lägen = (
+                        kors
+                        for kors in self.kors.values()
+                        if not kors.tom and not kors.låst and kors.origo == bks
+                    )
                     mh = (kors for kors in lägen if kors.kompatibelt_med(bästa))
-                    mjh = (m for kors in mh for m in kors.möjligheter_med(bästa) if m not in self.cache)
+                    mjh = (
+                        m
+                        for kors in mh
+                        for m in kors.möjligheter_med(bästa)
+                        if m not in self.cache
+                    )
                     minst_biverkningar = []
                     for pröva in mjh:
                         self.cache.append(pröva)
@@ -438,7 +448,7 @@ class Korsord:
                     yield min(minst_biverkningar, key=itemgetter(0))[1]
             except Fortare:
                 continue
-    
+
     def biverkningar(self, rd: Ord):
         antal_aparta = len(self.aparta)
         self.sätt(rd)
@@ -454,7 +464,6 @@ class Korsord:
         self.ångra()
         return antal, rd
 
-
     def generera_kors(self):
         kors = [k for k in self.kors.values() if not k.låst and not k.tom]
         if kors:
@@ -465,7 +474,9 @@ class Korsord:
         while True:
             try:
                 for o in self.ordlista.kompatibla(kors.origo):
-                    mh = (mh for mh in kors.möjligheter_med(o) if kors.kompatibelt_med(o))
+                    mh = (
+                        mh for mh in kors.möjligheter_med(o) if kors.kompatibelt_med(o)
+                    )
                     m = (c for c in mh if not c in self.cache)
                     for möjlighet in m:
                         yield möjlighet
@@ -498,7 +509,7 @@ class Korsord:
                 raise Inkompatibel()
             kompatibla.append((o, komp))
         return kompatibla
-        
+
     def hantera_aparta(self):
         while self.aparta:
             try:
@@ -560,19 +571,23 @@ class Korsord:
         läge = Läge(passande_höjd, passande_bredd, randrange(0, 2))
         self.sätt(startord.positionera(läge))
         return self
-    
+
     def poängräkning(self):
         poäng = sum(o.poäng for o in self.ord)
-        täckning = sum((isinstance(bks, str) and bks.isalpha() for r in self.rader for bks in r))
+        täckning = sum(
+            (isinstance(bks, str) and bks.isalpha() for r in self.rader for bks in r)
+        )
         täckning = täckning / (self.bredd * self.höjd)
         medel = mean(len(o.ord) for o in self.ord)
         return poäng * medel * täckning
+
 
 @lru_cache(maxsize=5000)
 def passar(rd: Ord, bks: str):
     ihop = list(zip(rd, bks))
     passar = not any([(not o == b and not b == Ruta.TOM.value) for o, b in ihop])
     return passar
+
 
 @dataclass(unsafe_hash=True)
 class Kors:
@@ -589,7 +604,7 @@ class Kors:
 
     @property
     def origo(self):
-        return self.korsord[self.läge.x:self.läge.y]
+        return self.korsord[self.läge.x : self.läge.y]
 
     @property
     def gåta(self):
@@ -598,26 +613,29 @@ class Kors:
     @property
     def tom(self):
         return self.origo is Ruta.TOM
-    
+
     @property
     def n(self):
-        return self.kol[0:self.läge.x]
+        return self.kol[0 : self.läge.x]
 
     @property
     def e(self):
-        return self.rad[self.läge.y + 1:]
+        return self.rad[self.läge.y + 1 :]
 
     @property
     def s(self):
-        return self.kol[self.läge.x + 1:]
+        return self.kol[self.läge.x + 1 :]
 
     @property
     def w(self):
-        return self.rad[0:self.läge.y]
+        return self.rad[0 : self.läge.y]
 
     @property
     def låst(self):
-        riktningar = [(not getattr(self, d) or getattr(self, d)[0] is not Ruta.TOM) for d in "nesw"]
+        riktningar = [
+            (not getattr(self, d) or getattr(self, d)[0] is not Ruta.TOM)
+            for d in "nesw"
+        ]
         return all(riktningar)
 
     @lru_cache(maxsize=5000)
@@ -633,7 +651,7 @@ class Kors:
             return False
         funkar = all([(len(rd) - max(förekomst) <= fritt), (min(förekomst) <= uppåt)])
         return funkar
-    
+
     def möjligheter_med(self, rd: Ord):
         yield from self.i(rd, 0)
         yield from self.i(rd, 1)
@@ -648,8 +666,14 @@ class Kors:
         förekommer = rd.förekomst(self.origo)
         är_sub = self.korsord.ordlista.kompatibla(rd.ord)
         if 0 < len(är_sub):
-            sub_före = 0 < min([max(m.förekomst(rd.ord), default=0) for m in är_sub if not m == rd], default=0)
-            sub_efter = 0 < max([min(m.förekomst(rd.ord), default=0) for m in är_sub if not m == rd], default=0)
+            sub_före = 0 < min(
+                [max(m.förekomst(rd.ord), default=0) for m in är_sub if not m == rd],
+                default=0,
+            )
+            sub_efter = 0 < max(
+                [min(m.förekomst(rd.ord), default=0) for m in är_sub if not m == rd],
+                default=0,
+            )
         else:
             sub_före, sub_efter = False, False
         for ix in rd.förekomst(self.origo):
@@ -676,18 +700,19 @@ class Kors:
                 läge = Läge(self.läge.x, max(0, self.läge.y - ix), 0)
                 kp = Ord(*astuple(rd)).positionera(läge)
                 yield kp
-            
+
             rd.reset()
 
-        
-    
+
 class Inkompatibel(Exception):
     def __init__(self, ord=None):
         super().__init__()
         self.ord = ord
 
+
 class Fortare(Exception):
     pass
+
 
 def generera(korsord: Korsord, tidsgräns=60) -> Korsord:
     möjligt = korsord.möjligheter_för_ord()
@@ -707,6 +732,7 @@ def generera(korsord: Korsord, tidsgräns=60) -> Korsord:
             möjligt = korsord.möjligheter()
     return korsord
 
+
 def spara(korsord):
     with Path("./sparade.txt").open(mode="a", encoding="utf-8") as bank:
         bank.write(str(korsord))
@@ -716,6 +742,7 @@ def spara(korsord):
 def bygg_vidare(korsord):
     spara(generera(korsord, tidsgräns=900))
 
+
 def main(tidsgräns=1200):
     for _ in range(5):
         ordlista = Ordlista()
@@ -723,10 +750,7 @@ def main(tidsgräns=1200):
         korsord.starta()
         gen = generera(korsord, tidsgräns=tidsgräns)
         spara(gen)
-    
-    
 
 
 if __name__ == "__main__":
     bygg_vidare(main())
-
