@@ -23,15 +23,17 @@ def write_words(ord: list[str], mode="a"):
     mål = Path("./words.txt")
     with mål.open(mode=mode, encoding="utf-8") as ordfil:
         for o in ord:
-            ordfil.write(o + "\n")
+            if o:
+                ordfil.write(o + "\n")
     return True
 
 
 def mixtra(ord):
     redan = load_words()
-    korta = {s.text for o in ord for s in o if len(s) < 5 and s not in redan}
-    korta = [s for s in korta if len(s) < 5 and s not in redan]
-    return korta
+    korta = list({s.text for o in ord for s in o if len(s.text) == 5 and s not in redan})
+    korta = [s.strip("\n") for s in korta + redan if " " not in s]
+
+    return korta 
 
 
 def process(ord):
@@ -57,7 +59,9 @@ def unika():
 
 
 def main():
-    rd = sorted(unika(), key=len, reverse=True)
+    rd = load_syn()
+    mx = mixtra(rd)
+    rd = sorted(mx, key=len, reverse=True)
     write_words(rd, mode="w")
 
 
